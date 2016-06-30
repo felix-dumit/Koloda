@@ -85,6 +85,7 @@ public class DraggableCardView: UIView, UIGestureRecognizerDelegate {
         addGestureRecognizer(panGestureRecognizer)
         panGestureRecognizer.delegate = self
         tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(DraggableCardView.tapRecognized(_:)))
+        tapGestureRecognizer.cancelsTouchesInView = false
         addGestureRecognizer(tapGestureRecognizer)
     }
     
@@ -211,7 +212,6 @@ public class DraggableCardView: UIView, UIGestureRecognizerDelegate {
             layer.rasterizationScale = UIScreen.mainScreen().scale
             layer.shouldRasterize = true
             
-            break
         case .Changed:
             let rotationStrength = min(dragDistance.x / CGRectGetWidth(frame), rotationMax)
             let rotationAngle = animationDirectionY * defaultRotationAngle * rotationStrength
@@ -231,13 +231,14 @@ public class DraggableCardView: UIView, UIGestureRecognizerDelegate {
                 delegate?.card(self, wasDraggedWithFinishPercentage: min(fabs(100 * percentage), 100), inDirection: dragDirection)
             }
             
-            break
         case .Ended:
             swipeMadeAction()
             
             layer.shouldRasterize = false
-        default :
-            break
+            
+        default:
+            layer.shouldRasterize = false
+            resetViewPositionAndTransformations()
         }
     }
     
@@ -295,7 +296,8 @@ public class DraggableCardView: UIView, UIGestureRecognizerDelegate {
     
     private func updateOverlayWithFinishPercent(percent: CGFloat, direction: SwipeResultDirection?) {
         overlayView?.overlayState = direction
-        overlayView?.overlayStrength = max(min(percent/swipePercentageMargin, 1.0), 0)
+        let progress = max(min(percent/swipePercentageMargin, 1.0), 0)
+        overlayView?.updateWithProgress(progress)
     }
     
     private func swipeMadeAction() {
